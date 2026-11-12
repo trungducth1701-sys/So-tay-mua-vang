@@ -152,8 +152,56 @@
     if (confirmKey === k) { confirmKey = null; clearTimeout(confirmTimer); return true; }
     confirmKey = k; clearTimeout(confirmTimer); confirmTimer = setTimeout(function () { confirmKey = null; renderSet(); }, 4000); renderSet(); return false;
   }
+
+  /* ---------- tự lấy từ Gmail qua Apps Script ---------- */
+  var SKEY = 'the-tin-dung-sync-v1';
+  var sync = (function () { try { return JSON.parse(localStorage.getItem(SKEY)) || {}; } catch (e) { return {}; } })();
+  function saveSync() { try { localStorage.setItem(SKEY, JSON.stringify(sync)); } catch (e) {} }
+  function bankCard(bank, last4) {
+    var b = String(bank).toLowerCase();
+    var list = state.cards.filter(function (c) { return String(c.name).toLowerCase().indexOf(b) >= 0 || (b === 'vietcombank' && /vcb/i.test(c.name)) || (b === 'vpbank' && /vpb/i.test(c.name)); });
+    var exact = list.filter(function (c) { return c.last4 && last4 && c.last4 === last4; })[0];
+    return exact || list.filter(function (c) { return !c.last4; })[0] || (list.length === 1 ? list[0] : null);
+  }
+  var syncing = false;
+  async function doSync(manual) {
+    if (!sync.url || !sync.token || syncing) { if (manual) toast('Chưa nhập link và mã bí mật.'); return; }
+    syncing = true; sync.msg = 'Đang cập nhật…'; if (manual) renderSet();
+    try {
+      var r = await fetch(sync.url + (sync.url.indexOf('?') < 0 ? '?' : '&') + 't=' + encodeURIComponent(sync.token), { cache: 'no-store' });
+      var d = await r.json();
+      if (d.error) throw new Error(d.error === 'unauthorized' ? 'Mã bí mật chưa đúng' : d.error);
+      var added = 0, foreign = 0, nomatch = 0, stm = 0;
+      (d.tx || []).forEach(function (t) {
+        if (state.tx.some(function (x) { return x.srcId === t.id; })) return;
+        if (t.amount == null) { foreign++; return; }
+        var c = bankCard(t.bank, t.last4); if (!c) { nomatch++; return; }
+        state.tx.push({ id: uid(), srcId: t.id, cardId: c.id, date: t.date, amount: t.amount, type: t.type === 'pay' ? 'pay' : 'spend', note: t.merchant || (t.bank + ' (Gmail)') });
+        added++;
+      });
+      (d.stmts || []).forEach(function (st) {
+        var c = bankCard(st.bank, st.last4); if (!c || !st.to || st.balance == null) return;
+        if (!c.stmt || c.stmt.date < st.to) { c.stmt = { date: st.to, balance: st.balance, min: st.min, due: st.due }; stm++; }
+      });
+      sync.alerts = d.alerts || [];
+      sync.last = new Date().toISOString();
+      sync.msg = 'Cập nhật xong: +' + added + ' giao dịch, ' + stm + ' sao kê' + (foreign ? ', ' + foreign + ' giao dịch ngoại tệ chưa có số VND (nhập tay)' : '') + (nomatch ? ', ' + nomatch + ' giao dịch chưa khớp thẻ nào (kiểm tra tên thẻ có chữ Vietcombank/VPBank và 4 số cuối)' : '') + '.';
+      saveSync(); save(); renderAll();
+    } catch (e) {
+      sync.msg = 'Không lấy được dữ liệu: ' + (e.message || e) + '.'; saveSync(); renderSet();
+    }
+    syncing = false;
+  }
+  function syncCard() {
+    var al = (sync.alerts || []).map(function (a) { return '<div class="hint err">⚠ ' + esc(a.bank) + ' ••' + esc(a.last4) + ' (' + fmtDate(a.date) + '): ' + esc(a.text) + '</div>'; }).join('');
+    return '<div class="card"><h3>Tự lấy từ Gmail</h3><p class="note">Dán link Apps Script (kết thúc bằng /exec) và mã bí mật. App tự cập nhật mỗi khi mở. Sacombank chưa hỗ trợ.</p>' + al +
+      '<div class="field"><label for="syUrl">Link</label><input id="syUrl" type="url" autocomplete="off" spellcheck="false" value="' + esc(sync.url || '') + '"></div>' +
+      '<div class="field"><label for="syTok">Mã bí mật</label><input id="syTok" type="password" autocomplete="off" spellcheck="false" value="' + esc(sync.token || '') + '"></div>' +
+      '<button type="button" class="btn block" data-act="syncsave">Lưu và cập nhật ngay</button>' +
+      '<div class="hint" role="status">' + esc(sync.msg || '') + (sync.last ? ' Lần cuối: ' + new Date(sync.last).toLocaleString('vi-VN') : '') + '</div></div>';
+  }
   function renderSet() {
-    $('#setBody').innerHTML = '<div class="card"><h3>Sao lưu và khôi phục</h3>' +
+    $('#setBody').innerHTML = syncCard() + '<div class="card"><h3>Sao lưu và khôi phục</h3>' +
       '<p class="note">Dữ liệu chỉ nằm trên điện thoại này. Hãy sao lưu thường xuyên, và trước khi đổi máy hoặc xóa app.</p>' +
       '<button type="button" class="btn block" data-act="share">Lưu bản sao lưu</button>' +
       '<button type="button" class="btn ghost block" data-act="copy">Sao chép nội dung sao lưu</button>' +
@@ -319,6 +367,7 @@
     else if (act === 'stmt') openStmt(id);
     else if (act === 'parsesms') parseSmsFlow();
     else if (act === 'ics') exportIcs();
+    else if (act === 'syncsave') { sync.url = $('#syUrl').value.trim(); sync.token = $('#syTok').value.trim(); saveSync(); doSync(true); }
     else if (act === 'share') shareBackup();
     else if (act === 'copy') copyBackup();
     else if (act === 'pickfile') $('#impFile').click();
@@ -331,6 +380,8 @@
   });
   function renderAll() { renderHome(); renderCards(); renderTx(); renderRem(); renderSet(); $('#todayStat').textContent = 'Hôm nay ' + fmtDate(today()); }
   renderAll();
-  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') renderAll(); });
+  function autoSync() { if (sync.url && (!sync.last || Date.now() - Date.parse(sync.last) > 600000)) doSync(false); }
+  autoSync();
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { renderAll(); autoSync(); } });
   if ('serviceWorker' in navigator) window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
 })();
