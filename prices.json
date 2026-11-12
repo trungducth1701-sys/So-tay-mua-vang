@@ -1,3 +1,18 @@
-{"asOf":"08:47 12/11/2026","updatedAt":"2026-11-12T01:47:00Z","items":[
-{"key":"nhan","label":"Nhẫn SJC 99,99%","buy":134800000,"sell":138800000},
-{"key":"mieng","label":"Vàng miếng SJC","buy":136000000,"sell":139000000}]}
+{
+ "asOf": "10:00 12/11/2026",
+ "items": [
+  {
+   "key": "nhan",
+   "label": "Nhẫn SJC 99,99%",
+   "buy": 134800000,
+   "sell": 138800000
+  },
+  {
+   "key": "mieng",
+   "label": "Vàng miếng SJC",
+   "buy": 136000000,
+   "sell": 139000000
+  }
+ ],
+ "updatedAt": "2026-11-12T03:19:31Z"
+}
