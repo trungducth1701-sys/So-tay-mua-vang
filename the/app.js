@@ -83,7 +83,8 @@
     var tiles = '<div class="tiles">' +
       tile('Cần trả các kỳ đã chốt', vnd(tot('remaining'))) + tile('Chi tiêu kỳ mới (chưa chốt)', vnd(tot('newSpend'))) +
       tile('Tổng dư nợ', vnd(tot('outstanding'))) + tile('Phí + lãi đang phát sinh (ước tính)', fees ? vnd(fees) : '0 ₫') + '</div>';
-    box.innerHTML = hero + tiles + '<div class="lots">' + infos.map(function (x) { return cardBtn(x.c); }).join('') + '</div>';
+    var alr = (sync.alerts || []).map(function (a) { return '<div class="hint err">⚠ ' + esc(a.bank) + ' ••' + esc(a.last4) + ' (' + fmtDate(a.date) + '): ' + esc(a.text) + '</div>'; }).join('');
+    box.innerHTML = alr + hero + tiles + '<div class="lots">' + infos.map(function (x) { return cardBtn(x.c); }).join('') + '</div>';
   }
   function tile(k, v) { return '<div class="tile"><div class="k">' + k + '</div><div class="v">' + esc(v) + '</div></div>'; }
 
@@ -159,10 +160,15 @@
   var sync = (function () { try { return JSON.parse(localStorage.getItem(SKEY)) || {}; } catch (e) { return {}; } })();
   function saveSync() { try { localStorage.setItem(SKEY, JSON.stringify(sync)); } catch (e) {} }
   function bankCard(bank, last4) {
-    var b = String(bank).toLowerCase();
-    var list = state.cards.filter(function (c) { return String(c.name).toLowerCase().indexOf(b) >= 0 || (b === 'vietcombank' && /vcb/i.test(c.name)) || (b === 'vpbank' && /vpb/i.test(c.name)); });
-    var exact = list.filter(function (c) { return c.last4 && last4 && c.last4 === last4; })[0];
-    return exact || list.filter(function (c) { return !c.last4; })[0] || (list.length === 1 ? list[0] : null);
+    var l4 = String(last4 || '');
+    if (l4.length >= 3) {
+      var byNum = state.cards.filter(function (c) { var n = String(c.last4 || ''); return n && (n.slice(-l4.length) === l4 || l4.slice(-n.length) === n); })[0];
+      if (byNum) return byNum;
+    }
+    var b = String(bank).toLowerCase().replace(/\s+/g, '');
+    var key = b === 'vietcombank' ? /vietcombank|vcb/ : b === 'vpbank' ? /vpbank|vpb/ : new RegExp(b);
+    var list = state.cards.filter(function (c) { return key.test(String(c.name).toLowerCase().replace(/\s+/g, '')); });
+    return list.filter(function (c) { return !c.last4; })[0] || (list.length === 1 ? list[0] : null);
   }
   var syncing = false;
   async function doSync(manual) {
