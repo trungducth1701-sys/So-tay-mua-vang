@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sổ vàng">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#F2F3F5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1318" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<title>Sổ vàng</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <h1 id="screenTitle">Tổng quan</h1>
+  <span class="feedstat" id="feedStat"></span>
+</header>
+
+<main>
+  <section class="tab" id="tab-home" aria-label="Tổng quan"><div id="homeBody"></div></section>
+
+  <section class="tab" id="tab-lots" aria-label="Các lô vàng" hidden>
+    <div class="row"><h2>Các lô vàng</h2><button type="button" class="btn small" id="addLotBtn">Thêm lô</button></div>
+    <div id="lotsBody"></div>
+  </section>
+
+  <section class="tab" id="tab-sim" aria-label="Mô phỏng" hidden>
+    <div id="simEmpty" class="empty" hidden><span>Thêm ít nhất một lô vàng để mô phỏng bán hoặc mua thêm.</span></div>
+    <div id="simBody" style="display:grid;gap:14px">
+      <div class="seg" id="simGrp" role="group" aria-label="Loại vàng" hidden></div>
+      <div class="seg" id="simMode" role="group" aria-label="Phương án">
+        <button type="button" data-mode="sell" aria-pressed="true">Bán</button>
+        <button type="button" data-mode="buy" aria-pressed="false">Mua thêm</button>
+      </div>
+
+      <div class="card" id="panSell">
+        <div class="field">
+          <label for="sQty">Số lượng bán (để trống là bán hết)</label>
+          <div class="inwrap"><input id="sQty" inputmode="decimal" autocomplete="off" placeholder="Tất cả"><span class="suffix u-qty"></span></div>
+        </div>
+        <div class="field">
+          <label for="sPrice">Giá bán dự kiến (để trống là giá tiệm mua vào hiện tại)</label>
+          <div class="inwrap"><input id="sPrice" inputmode="decimal" autocomplete="off" placeholder="Giá hiện tại"><span class="suffix u-price"></span></div>
+        </div>
+        <div class="field">
+          <label for="sMethod">Cách tính giá vốn</label>
+          <select id="sMethod"><option value="avg">Bình quân các lô</option><option value="fifo">Lô mua trước bán trước</option></select>
+        </div>
+        <div class="hint" id="sHint"></div>
+        <div id="sOut"></div>
+      </div>
+
+      <div class="card" id="panBuy" hidden>
+        <div class="field">
+          <label for="bQty">Số lượng mua thêm</label>
+          <div class="inwrap"><input id="bQty" inputmode="decimal" autocomplete="off" placeholder="1"><span class="suffix u-qty"></span></div>
+        </div>
+        <div class="field">
+          <label for="bPrice">Giá mua (để trống là giá tiệm bán ra hiện tại)</label>
+          <div class="inwrap"><input id="bPrice" inputmode="decimal" autocomplete="off" placeholder="Giá hiện tại"><span class="suffix u-price"></span></div>
+        </div>
+        <div class="hint" id="bHint"></div>
+        <div id="bOut"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Nếu giá mua vào thay đổi</h2>
+          <div class="field" style="grid-template-columns:auto 84px;align-items:center;gap:8px">
+            <label for="stepSel" style="white-space:nowrap">Bước (tr/lượng)</label>
+            <select id="stepSel"><option value="1">1</option><option value="2">2</option><option value="5">5</option></select>
+          </div>
+        </div>
+        <div class="tbl" id="scen"></div>
+        <p class="note">Tính trên toàn bộ số vàng của loại đang chọn. Chưa gồm phí gia công, thuế hay phí khác.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="tab" id="tab-set" aria-label="Cài đặt" hidden><div id="setBody"></div></section>
+</main>
+
+<nav class="tabbar" role="tablist" aria-label="Màn hình">
+  <div class="in">
+    <button type="button" role="tab" data-tab="home" aria-selected="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>Tổng quan</button>
+    <button type="button" role="tab" data-tab="lots" aria-selected="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>Các lô</button>
+    <button type="button" role="tab" data-tab="sim" aria-selected="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Mô phỏng</button>
+    <button type="button" role="tab" data-tab="set" aria-selected="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>Cài đặt</button>
+  </div>
+</nav>
+
+<dialog id="lotDlg" aria-label="Lô vàng"></dialog>
+<dialog id="priceDlg" aria-label="Giá vàng hiện tại"></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="calc.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
