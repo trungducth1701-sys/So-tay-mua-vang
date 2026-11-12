@@ -1,0 +1,10 @@
+name = "the-tin-dung-mail"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+[vars]
+MAIL_DOMAIN = "DOI-THANH-TEN-MIEN-CUA-BAN.com"
+
+[[kv_namespaces]]
+binding = "USERS"
+id = "DAN-ID-KV-VAO-DAY"

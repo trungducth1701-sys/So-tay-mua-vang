@@ -68,7 +68,7 @@ function quet_() {
 
 // ---------- Công cụ ----------
 function num_(s) { return parseFloat(String(s).replace(/[^\d.]/g, '')) || 0; }
-function viNum_(s) { return Number(String(s).replace(/[^\d]/g, '')) || 0; }
+function viNum_(s) { var t = String(s); if (/,/.test(t)) t = t.replace(/\.\d{1,2}\s*$/, ''); return Number(t.replace(/[^\d]/g, '')) || 0; }
 function dmy_(s) { // dd-mm-yyyy hh:mm:ss hoặc dd/mm/yyyy ...
   var m = s.match(/(\d{2})[-\/](\d{2})[-\/](\d{4})(?:\s+(\d{2}):(\d{2}))?/);
   if (!m) return null;
@@ -95,7 +95,7 @@ function giaoDichVCB_(b, id) {
 }
 function nhacNoVCB_(b, when, id) {
   var last = (b.match(/số\s*\*?(\d{3,4})/i) || [])[1] || '';
-  var amt = (b.match(/dư nợ[^\d]{0,60}?([\d.,]+)\s*VND/i) || [])[1];
+  var amt = (b.match(/dư nợ[\s\S]{0,120}?là\s*([\d.,]+)\s*VND/i) || [])[1];
   if (!amt) return null;
   return { id: 'vcb-nn-' + id, bank: 'Vietcombank', last4: last, amount: viNum_(amt),
            date: iso_(new Date(when)), text: 'Nhắc nợ: đã quá hạn, tối thiểu ' + viNum_(amt) + ' đ (bỏ qua nếu đã thanh toán)' };

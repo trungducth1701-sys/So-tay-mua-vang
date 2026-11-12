@@ -154,6 +154,7 @@
   }
 
   /* ---------- tự lấy từ Gmail qua Apps Script ---------- */
+  var CLOUD_URL = ''; // địa chỉ Worker sau khi triển khai, ví dụ https://the-tin-dung-mail.xxx.workers.dev
   var SKEY = 'the-tin-dung-sync-v1';
   var sync = (function () { try { return JSON.parse(localStorage.getItem(SKEY)) || {}; } catch (e) { return {}; } })();
   function saveSync() { try { localStorage.setItem(SKEY, JSON.stringify(sync)); } catch (e) {} }
@@ -183,7 +184,7 @@
         var c = bankCard(st.bank, st.last4); if (!c || !st.to || st.balance == null) return;
         if (!c.stmt || c.stmt.date < st.to) { c.stmt = { date: st.to, balance: st.balance, min: st.min, due: st.due }; stm++; }
       });
-      sync.alerts = d.alerts || [];
+      sync.alerts = d.alerts || []; if (d.confirm) sync.confirm = d.confirm;
       sync.last = new Date().toISOString();
       sync.msg = 'Cập nhật xong: +' + added + ' giao dịch, ' + stm + ' sao kê' + (foreign ? ', ' + foreign + ' giao dịch ngoại tệ chưa có số VND (nhập tay)' : '') + (nomatch ? ', ' + nomatch + ' giao dịch chưa khớp thẻ nào (kiểm tra tên thẻ có chữ Vietcombank/VPBank và 4 số cuối)' : '') + '.';
       saveSync(); save(); renderAll();
@@ -192,7 +193,27 @@
     }
     syncing = false;
   }
+  async function registerCloud() {
+    try {
+      var r = await fetch(CLOUD_URL + '/register', { method: 'POST' }); var d = await r.json();
+      if (d.error) throw new Error(d.error);
+      sync = { url: d.api, token: d.token, email: d.email, mode: 'cloud', msg: 'Đã tạo hộp thư. Làm tiếp bước chuyển tiếp bên dưới.' };
+      saveSync(); renderSet();
+    } catch (e) { toast('Không tạo được: ' + (e.message || e)); }
+  }
+  function cloudStatus() {
+    var al = (sync.alerts || []).map(function (a) { return '<div class="hint err">⚠ ' + esc(a.bank) + ' ••' + esc(a.last4) + ' (' + fmtDate(a.date) + '): ' + esc(a.text) + '</div>'; }).join('');
+    return '<div class="card"><h3>Cập nhật</h3>' + al + '<button type="button" class="btn block" data-act="syncnow">Cập nhật ngay</button><div class="hint" role="status">' + esc(sync.msg || '') + (sync.last ? ' Lần cuối: ' + new Date(sync.last).toLocaleString('vi-VN') : '') + '</div></div>';
+  }
+  function cloudCard() {
+    if (!CLOUD_URL) return '';
+    if (sync.mode !== 'cloud') return '<div class="card"><h3>Tự động đọc thư ngân hàng</h3><p class="note">App tạo cho bạn một địa chỉ thư riêng. Bạn bật chuyển tiếp thư ngân hàng từ Gmail tới đó một lần, sau đó app tự cập nhật giao dịch, sao kê và hạn trả. App không đọc Gmail của bạn, chỉ nhận thư bạn chuyển.</p><button type="button" class="btn block" data-act="cloudreg">Tạo địa chỉ thư của tôi</button></div>';
+    var cf = sync.confirm && sync.confirm.code ? '<div class="hint">Mã xác nhận của Gmail: <b>' + esc(sync.confirm.code) + '</b>. Nhập mã này vào Gmail.</div>' : '';
+    return '<div class="card"><h3>Bật chuyển tiếp trong Gmail</h3><p class="note">Địa chỉ của bạn: <b>' + esc(sync.email) + '</b></p>' + cf +
+      '<ol class="note"><li>Trên máy tính, mở Gmail → Cài đặt (bánh răng) → Xem tất cả cài đặt → <b>Chuyển tiếp và POP/IMAP</b> → Thêm địa chỉ chuyển tiếp, dán địa chỉ trên.</li><li>Quay lại app, bấm Cập nhật để xem mã xác nhận, nhập mã vào Gmail.</li><li>Gmail → Bộ lọc và địa chỉ bị chặn → Tạo bộ lọc mới → ô <b>Từ</b> nhập tên miền ngân hàng (vietcombank.com.vn, vpb.com.vn) → Tạo bộ lọc → tích <b>Chuyển tiếp nó tới</b> địa chỉ của bạn.</li></ol></div>';
+  }
   function syncCard() {
+    if (sync.mode === 'cloud') return cloudCard() + cloudStatus();
     var al = (sync.alerts || []).map(function (a) { return '<div class="hint err">⚠ ' + esc(a.bank) + ' ••' + esc(a.last4) + ' (' + fmtDate(a.date) + '): ' + esc(a.text) + '</div>'; }).join('');
     return '<div class="card"><h3>Tự lấy từ Gmail</h3><p class="note">Dán link Apps Script (kết thúc bằng /exec) và mã bí mật. App tự cập nhật mỗi khi mở. Sacombank chưa hỗ trợ.</p>' + al +
       '<div class="field"><label for="syUrl">Link</label><input id="syUrl" type="url" autocomplete="off" spellcheck="false" value="' + esc(sync.url || '') + '"></div>' +
@@ -201,7 +222,7 @@
       '<div class="hint" role="status">' + esc(sync.msg || '') + (sync.last ? ' Lần cuối: ' + new Date(sync.last).toLocaleString('vi-VN') : '') + '</div></div>';
   }
   function renderSet() {
-    $('#setBody').innerHTML = syncCard() + '<div class="card"><h3>Sao lưu và khôi phục</h3>' +
+    $('#setBody').innerHTML = (sync.mode === 'cloud' ? '' : cloudCard()) + syncCard() + '<div class="card"><h3>Sao lưu và khôi phục</h3>' +
       '<p class="note">Dữ liệu chỉ nằm trên điện thoại này. Hãy sao lưu thường xuyên, và trước khi đổi máy hoặc xóa app.</p>' +
       '<button type="button" class="btn block" data-act="share">Lưu bản sao lưu</button>' +
       '<button type="button" class="btn ghost block" data-act="copy">Sao chép nội dung sao lưu</button>' +
@@ -367,6 +388,8 @@
     else if (act === 'stmt') openStmt(id);
     else if (act === 'parsesms') parseSmsFlow();
     else if (act === 'ics') exportIcs();
+    else if (act === 'cloudreg') registerCloud();
+    else if (act === 'syncnow') doSync(true);
     else if (act === 'syncsave') { sync.url = $('#syUrl').value.trim(); sync.token = $('#syTok').value.trim(); saveSync(); doSync(true); }
     else if (act === 'share') shareBackup();
     else if (act === 'copy') copyBackup();
