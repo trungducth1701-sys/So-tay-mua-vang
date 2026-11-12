@@ -2,7 +2,22 @@
 (function () {
   'use strict';
   var C = window.Calc;
-  var KEY = 'so-vang-app-v1';
+  var META_KEY = 'so-vang-books';
+  function loadMeta() {
+    try {
+      var m = JSON.parse(localStorage.getItem(META_KEY));
+      if (m && Array.isArray(m.list) && m.list.length) {
+        if (!m.list.some(function (b) { return b.id === m.active; })) m.active = m.list[0].id;
+        return m;
+      }
+    } catch (e) {}
+    return { active: 'b1', list: [{ id: 'b1', name: 'Sổ của tôi' }] };
+  }
+  var meta = loadMeta();
+  function keyOf(id) { return id === 'b1' ? 'so-vang-app-v1' : 'so-vang-app-v1-' + id; }
+  var KEY = keyOf(meta.active);
+  function saveMeta() { try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (e) {} }
+  function bookName() { return (meta.list.filter(function (b) { return b.id === meta.active; })[0] || {}).name || ''; }
   var GRPS = ['main', 'kmh'];
   var GNAME = { main: 'Vàng 99,99', kmh: 'Vàng 99,999 (KMH)' };
   var SJC_LABEL = { nhan: 'Nhẫn SJC 99,99% (1, 2, 5 chỉ)', mieng: 'Vàng miếng SJC (1 lượng)' };
@@ -300,7 +315,16 @@
     var f = state.feed, pm = priceOf('main');
     var feedLine = f ? ('Giá SJC đọc lúc ' + (f.asOf || '—')) : 'Chưa có giá SJC nào';
     var kLine = priceOf('kmh') ? ('mua vào ' + priceTr(priceOf('kmh').buy) + ' tr/' + unitName()) : 'chưa nhập';
-    $('#setBody').innerHTML =
+    var books = meta.list.map(function (b) {
+      return '<button type="button" class="btn' + (b.id === meta.active ? '' : ' ghost') + ' block" data-act="switchbook" data-id="' + esc(b.id) + '">' + esc(b.name) + (b.id === meta.active ? ' (đang xem)' : '') + '</button>';
+    }).join('');
+    var booksCard = '<div class="card"><h3>Sổ vàng</h3>' + books +
+      '<div class="field"><label for="renBook">Đổi tên sổ đang xem</label><input id="renBook" maxlength="30" value="' + esc(bookName()) + '"></div>' +
+      '<button type="button" class="btn ghost block" data-act="renbook">Lưu tên</button>' +
+      '<div class="field"><label for="newBook">Thêm sổ mới (cho người hoặc tài khoản khác)</label><input id="newBook" maxlength="30" placeholder="Tên sổ, ví dụ: Sổ của mẹ"></div>' +
+      '<button type="button" class="btn ghost block" data-act="addbook">Thêm sổ</button>' +
+      (meta.list.length > 1 ? confirmBtn('delbook', 'Xóa sổ đang xem', 'Bấm lần nữa để xóa sổ này', 'delbook') : '') + '</div>';
+    $('#setBody').innerHTML = booksCard +
       '<div class="card"><h3>Hiển thị</h3>' +
       '<div class="field"><span class="lbl">Đơn vị hiển thị</span><div class="seg" id="unitSeg"><button type="button" data-unit="chi" aria-pressed="' + (state.unit === 'chi') + '">Chỉ</button><button type="button" data-unit="luong" aria-pressed="' + (state.unit === 'luong') + '">Lượng</button></div></div>' +
       '<div class="field"><label for="setMethod">Cách tính giá vốn khi bán</label><select id="setMethod"><option value="avg">Bình quân các lô</option><option value="fifo">Lô mua trước bán trước</option></select></div></div>' +
@@ -535,10 +559,15 @@
 
   /* ---------- điều khiển ---------- */
   var TITLES = { home: 'Tổng quan', lots: 'Các lô vàng', sim: 'Mô phỏng', set: 'Cài đặt' };
+  var curTab = 'home';
+  function updateTitle() {
+    $('#screenTitle').textContent = TITLES[curTab] + (meta.list.length > 1 ? ' · ' + bookName() : '');
+  }
   function showTab(name) {
+    curTab = name;
     Object.keys(TITLES).forEach(function (k) { $('#tab-' + k).hidden = k !== name; });
     $$('.tabbar button').forEach(function (b) { b.setAttribute('aria-selected', b.getAttribute('data-tab') === name); });
-    $('#screenTitle').textContent = TITLES[name];
+    updateTitle();
     window.scrollTo(0, 0);
   }
   $$('.tabbar button').forEach(function (b) { b.addEventListener('click', function () { showTab(b.getAttribute('data-tab')); }); });
@@ -565,6 +594,27 @@
     else if (act === 'copy') copyBackup();
     else if (act === 'pickfile') $('#impFile').click();
     else if (act === 'importtext') tryImport($('#impText').value);
+    else if (act === 'switchbook') { var id = b.getAttribute('data-id'); if (id !== meta.active) { meta.active = id; saveMeta(); location.reload(); } }
+    else if (act === 'addbook') {
+      var nm = ($('#newBook').value || '').trim();
+      if (!nm) { toast('Hãy nhập tên cho sổ mới.'); return; }
+      var nid = 'b' + Date.now().toString(36);
+      meta.list.push({ id: nid, name: nm }); meta.active = nid; saveMeta(); location.reload();
+    }
+    else if (act === 'renbook') {
+      var rn = ($('#renBook').value || '').trim();
+      if (!rn) { toast('Tên sổ không được để trống.'); return; }
+      meta.list.forEach(function (x) { if (x.id === meta.active) x.name = rn; });
+      saveMeta(); renderSettings(); updateTitle(); toast('Đã đổi tên sổ.');
+    }
+    else if (act === 'delbook') {
+      if (askConfirm('delbook')) {
+        var del = meta.active;
+        try { localStorage.removeItem(keyOf(del)); } catch (e) {}
+        meta.list = meta.list.filter(function (x) { return x.id !== del; });
+        meta.active = meta.list[0].id; saveMeta(); location.reload();
+      }
+    }
     else if (act === 'reset') {
       if (askConfirm('reset')) { var f = state.feed; state = defaults(); state.feed = f; save(); renderAll(); toast('Đã xóa toàn bộ dữ liệu.'); }
     }
@@ -592,6 +642,7 @@
 
   function renderAll() { renderHome(); renderLots(); renderSim(); renderSettings(); renderFeedStat(); }
   renderAll();
+  updateTitle();
   refreshFeed(false);
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') refreshFeed(false); });
   window.addEventListener('online', function () { refreshFeed(true); });
