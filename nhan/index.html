@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>In nhãn gửi thư</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@600&display=swap">
+<style>
+:root{--bg:#f6f4ef;--card:#ffffff;--fg:#1f2421;--mut:#667068;--line:#dcd8cd;--acc:#0f6e5c;--acc-fg:#ffffff;--acc-soft:#e1f1ec;--warn:#9a4a00;--warn-bg:#fff1dd;--err:#b3261e;--field:#fbfaf7}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141816;--card:#1d221f;--fg:#e8ece9;--mut:#9aa59e;--line:#323a35;--acc:#4cc2a5;--acc-fg:#0b2a22;--acc-soft:#1c3a31;--warn:#f0b36a;--warn-bg:#3a2c18;--err:#ff8a80;--field:#171b19;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#141816;--card:#1d221f;--fg:#e8ece9;--mut:#9aa59e;--line:#323a35;--acc:#4cc2a5;--acc-fg:#0b2a22;--acc-soft:#1c3a31;--warn:#f0b36a;--warn-bg:#3a2c18;--err:#ff8a80;--field:#171b19;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+main{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-family:"Space Grotesk",Inter,system-ui,sans-serif;font-size:1.6rem;line-height:1.2;margin:0;text-wrap:balance}
+.sub{color:var(--mut);margin:4px 0 0;max-width:62ch}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.step{display:flex;align-items:center;gap:10px;font-weight:600}
+.step b{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--acc);color:var(--acc-fg);font-size:.85rem}
+.drop{border:2px dashed var(--line);border-radius:10px;padding:22px;text-align:center;background:var(--field);cursor:pointer;color:var(--mut)}
+.drop:hover,.drop.on{border-color:var(--acc);color:var(--fg)}
+.drop strong{color:var(--fg)}
+input[type=text],textarea{width:100%;font:inherit;color:var(--fg);background:var(--field);border:1px solid var(--line);border-radius:8px;padding:9px 11px;min-width:0}
+textarea{resize:vertical;min-height:58px}
+input:focus,textarea:focus,button:focus-visible,.drop:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{font:inherit;font-weight:600;border:0;border-radius:9px;padding:10px 18px;background:var(--acc);color:var(--acc-fg);cursor:pointer}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--acc);border:1px solid var(--line)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font:inherit;border:1px solid var(--line);background:var(--acc-soft);color:var(--fg);border-radius:999px;padding:4px 12px;cursor:pointer}
+.note{color:var(--mut);font-size:.9rem;margin:0}
+.msg{padding:10px 12px;border-radius:8px;background:var(--acc-soft)}
+.msg.warn{background:var(--warn-bg);color:var(--warn)}
+.msg.err{background:var(--warn-bg);color:var(--err)}
+.rec{border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:8px;grid-template-columns:auto 1fr;min-width:0}
+.rec.off{opacity:.5}
+.rec .f{display:grid;gap:8px;min-width:0;grid-template-columns:1fr 1fr}
+.rec .f .w{grid-column:1/-1}
+label.l{font-size:.78rem;color:var(--mut);display:block;margin-bottom:2px;letter-spacing:.02em}
+.chk{display:flex;gap:8px;align-items:center}
+.chk input{width:18px;height:18px;accent-color:var(--acc)}
+.tpl{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.tpl label{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;background:var(--field)}
+.tpl input{margin-top:3px;width:18px;height:18px;accent-color:var(--acc)}
+.tpl small{display:block;color:var(--mut)}
+@media(max-width:560px){.rec .f{grid-template-columns:1fr}}
+</style>
+
+</head>
+<body>
+<main>
+  <header>
+    <h1>In nhãn gửi thư</h1>
+    <p class="sub">Tải file Excel lên, gõ ngày cần lấy, bấm tạo. Ra một file Word nhãn dán, mỗi ô là một đơn vị.</p>
+  </header>
+
+  <section class="card" aria-labelledby="s1">
+    <div class="step" id="s1"><b>1</b> Tải file Excel</div>
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Chọn file Excel">
+      <strong>Bấm để chọn file</strong> hoặc kéo thả vào đây<br><span class="note">Hỗ trợ .xlsb, .xlsx, .xls. File chỉ được xử lý ngay trên máy bạn, không gửi đi đâu.</span>
+    </div>
+    <input type="file" id="file" accept=".xlsb,.xlsx,.xls" hidden>
+    <div id="fileMsg" role="status"></div>
+    <div class="chips" id="dates" hidden></div>
+  </section>
+
+  <section class="card" aria-labelledby="s2">
+    <div class="step" id="s2"><b>2</b> Nhập ngày cần lấy</div>
+    <div class="row">
+      <div style="flex:1;min-width:180px"><input type="text" id="date" inputmode="numeric" autocomplete="off" placeholder="Ví dụ 16/10/2026" aria-label="Ngày gửi"></div>
+    </div>
+    <div id="dateMsg" role="status"></div>
+  </section>
+
+  <section class="card" id="resCard" aria-labelledby="s3" hidden>
+    <div class="step" id="s3"><b>3</b> Kiểm tra thông tin</div>
+    <p class="note">Mỗi đơn vị một ô nhãn (2 cột × 3 hàng, 6 ô một trang, nhiều hơn 6 thì sang trang sau). Sửa trực tiếp nếu cần, bỏ tích đơn vị nào thì không in đơn vị đó.</p>
+    <div id="list" style="display:grid;gap:10px"></div>
+    <div class="row" style="justify-content:space-between">
+      <span id="count" class="note"></span>
+      <button class="btn" id="go" type="button">Tạo file Word</button>
+    </div>
+    <div id="goMsg" role="status"></div>
+  </section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+/* Lõi xử lý: đọc Excel theo ngày, tách tên/địa chỉ/SĐT, điền 2 mẫu Word. Chạy được trong trình duyệt và Node. */
+(function (root) {
+  var NO = function (s) { return String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().replace(/\s+/g, ' ').trim(); };
+  var pad = function (n) { return String(n).padStart(2, '0'); };
+  var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+
+  /* ---------- ngày ---------- */
+  function isoFromParts(y, m, d) { return y + '-' + pad(m) + '-' + pad(d); }
+  function parseDateText(t) { // 16/10/2026, 16-10-26, 2026-10-16, 16/10 (không năm)
+    t = String(t || '').trim(); var m;
+    if ((m = t.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/))) return { y: +m[1], m: +m[2], d: +m[3] };
+    if ((m = t.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})$/))) return { y: +m[3] < 100 ? 2000 + +m[3] : +m[3], m: +m[2], d: +m[1] };
+    if ((m = t.match(/^(\d{1,2})[-\/.](\d{1,2})$/))) return { y: null, m: +m[2], d: +m[1] };
+    return null;
+  }
+  function cellDate(v, SSF) {
+    if (v instanceof Date) return { y: v.getFullYear(), m: v.getMonth() + 1, d: v.getDate() };
+    if (typeof v === 'number' && v > 20000 && v < 80000) { var p = SSF.parse_date_code(v); return { y: p.y, m: p.m, d: p.d }; }
+    if (typeof v === 'string') return parseDateText(v);
+    return null;
+  }
+
+  /* ---------- SĐT, tên/địa chỉ ---------- */
+  function fmtPhone(v) {
+    if (v == null || v === '') return '';
+    var s = String(v).trim();
+    if (/^\d+$/.test(s)) {
+      if (s.length === 9) s = '0' + s;
+      if (s.length === 10) return s.slice(0, 4) + ' ' + s.slice(4, 7) + ' ' + s.slice(7);
+    }
+    return s;
+  }
+  function splitCompany(text) {
+    var lines = String(text || '').split(/\r?\n/).map(function (x) { return x.trim(); }).filter(Boolean);
+    var name = lines.shift() || '';
+    if (/^\(.*\)$/.test(name)) name = name.slice(1, -1).trim();
+    return { name: name, addr: lines };
+  }
+
+  /* ---------- đọc Excel ---------- */
+  function readExcel(XLSX, buf) {
+    var wb = XLSX.read(buf, { type: 'array' });
+    var out = [], found = false;
+    wb.SheetNames.forEach(function (sn) {
+      var ws = wb.Sheets[sn];
+      var A = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null, blankrows: false });
+      var hi = -1, col = {};
+      for (var i = 0; i < Math.min(A.length, 30) && hi < 0; i++) {
+        var r = A[i] || [];
+        r.forEach(function (c, j) {
+          var n = NO(c);
+          if (n.indexOf('ngay gui') === 0) col.date = j;
+          else if (n.indexOf('nguoi nhan') === 0) col.who = j;
+          else if (n.indexOf('ten va dia chi') === 0) col.co = j;
+          else if (n.indexOf('so dien thoai') === 0) col.phone = j;
+        });
+        if (col.date != null && col.co != null) hi = i; else col = {};
+      }
+      if (hi < 0) return;
+      found = true;
+      var cur = null, n = 0;
+      for (var k = hi + 1; k < A.length; k++) {
+        var row = A[k] || [];
+        var d = cellDate(row[col.date], XLSX.SSF);
+        if (d) cur = d;
+        var co = row[col.co], who = col.who != null ? row[col.who] : null;
+        if ((co == null || String(co).trim() === '') && (who == null || String(who).trim() === '')) continue;
+        var sp = splitCompany(co);
+        n++;
+        out.push({ sheet: sn, date: cur, name: sp.name, addr: sp.addr.join('\n'), phone: fmtPhone(col.phone != null ? row[col.phone] : ''), who: who == null ? '' : String(who).trim() });
+      }
+    });
+    return { rows: out, found: found };
+  }
+  function filterByDate(rows, text) {
+    var q = parseDateText(text); if (!q) return null;
+    return rows.filter(function (r) { return r.date && r.date.d === q.d && r.date.m === q.m && (q.y == null || r.date.y === q.y); });
+  }
+  function dateList(rows) {
+    var seen = {}, out = [];
+    rows.forEach(function (r) { if (r.date) { var k = pad(r.date.d) + '/' + pad(r.date.m) + '/' + r.date.y; if (!seen[k]) { seen[k] = 1; out.push(k); } } });
+    return out;
+  }
+
+  /* ---------- đo chữ để chọn cỡ chữ vừa nhãn ---------- */
+  function makeMeasure() {
+    try {
+      var c = document.createElement('canvas').getContext('2d');
+      return function (t, pt, bold) { c.font = (bold ? 'bold ' : '') + (pt * 4 / 3) + 'px "Times New Roman","Liberation Serif",Times,serif'; return c.measureText(t).width * 0.75; };
+    } catch (e) {
+      return function (t, pt, bold) { return t.length * pt * (bold ? 0.62 : 0.48); };
+    }
+  }
+  function wrapLines(text, pt, bold, width, measure) {
+    var words = String(text).split(/\s+/).filter(Boolean), lines = 1, cur = '';
+    if (!words.length) return 1;
+    words.forEach(function (w) {
+      var t = cur ? cur + ' ' + w : w;
+      if (measure(t, pt, bold) > width && cur) { lines++; cur = w; } else cur = t;
+    });
+    return lines;
+  }
+  var LEVELS = [[18, 12, 13], [16, 12, 13], [16, 11, 12], [14, 11, 12], [13, 10.5, 11.5], [12, 10, 11], [11, 9.5, 10.5], [10, 9, 10], [9, 8.5, 9], [8, 8, 8], [7, 7, 7]];
+  function fitTomy(rec, measure) {
+    var W = 256, H = 118, phoneLine = [rec.phone, rec.who ? '(' + rec.who + ')' : ''].filter(Boolean).join(' ');
+    var addr = rec.addr ? rec.addr.split('\n') : [];
+    var pick = LEVELS[LEVELS.length - 1];
+    for (var i = 0; i < LEVELS.length; i++) {
+      var L = LEVELS[i];
+      var h = wrapLines(rec.name, L[0], true, W, measure) * L[0] * 1.17;
+      addr.forEach(function (a) { h += wrapLines(a, L[1], false, W, measure) * L[1] * 1.17; });
+      if (phoneLine) h += wrapLines(phoneLine, L[2], false, W, measure) * L[2] * 1.17;
+      if (h <= H) { pick = L; break; }
+    }
+    return { sizes: pick, phoneLine: phoneLine, addr: addr };
+  }
+  function tomyCell(rec, measure) {
+    var f = fitTomy(rec, measure), S = f.sizes;
+    var ppr = '<w:pPr><w:pStyle w:val="Normal"/><w:ind w:start="136" w:end="136"/><w:jc w:val="center"/></w:pPr>';
+    var run = function (t, pt, b) { return '<w:r><w:rPr>' + (b ? '<w:b/>' : '') + '<w:sz w:val="' + Math.round(pt * 2) + '"/><w:szCs w:val="' + Math.round(pt * 2) + '"/></w:rPr><w:t xml:space="preserve">' + esc(t) + '</w:t></w:r>'; };
+    var x = '<w:p>' + ppr + run(rec.name, S[0], true) + '</w:p>';
+    f.addr.forEach(function (a) { x += '<w:p>' + ppr + run(a, S[1], false) + '</w:p>'; });
+    if (f.phoneLine) x += '<w:p>' + ppr + run(f.phoneLine, S[2], false) + '</w:p>';
+    return x;
+  }
+
+  /* ---------- điền Word ---------- */
+  async function fillDocx(JSZip, tplB64, replacer) {
+    var zip = await JSZip.loadAsync(tplB64, { base64: true });
+    var xml = await zip.file('word/document.xml').async('string');
+    zip.file('word/document.xml', replacer(xml));
+    return zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+  }
+  /* Một file Word cho cả ngày: mỗi ô nhãn là một đơn vị, 6 ô một trang (2 cột x 3 hàng). */
+  function makeSheet(JSZip, tpl, recs, measure) {
+    return fillDocx(JSZip, tpl, function (x) {
+      var i0 = x.indexOf('<w:tbl>'), i1 = x.indexOf('</w:tbl>') + 8;
+      var tbl = x.slice(i0, i1), pages = [];
+      for (var k = 0; k < recs.length; k += 6) {
+        var n = 0, chunk = recs.slice(k, k + 6);
+        pages.push(tbl.replace(/@@CELL@@/g, function () { var r = chunk[n++]; return r ? tomyCell(r, measure) : '<w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr></w:p>'; }));
+      }
+      var br = '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+      return x.slice(0, i0) + pages.join(br) + x.slice(i1);
+    });
+  }
+  function slug(s) { return NO(s).replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40) || 'nhan'; }
+
+  root.NhanIn = { readExcel: readExcel, filterByDate: filterByDate, dateList: dateList, makeMeasure: makeMeasure, makeSheet: makeSheet, slug: slug, fitTomy: fitTomy, parseDateText: parseDateText, fmtPhone: fmtPhone, splitCompany: splitCompany };
+  if (typeof module !== 'undefined') module.exports = root.NhanIn;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(function () {
+  var TPL_TOMY = "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";
+  var $ = function (s) { return document.querySelector(s); };
+  var all = [], recs = [], measure = NhanIn.makeMeasure();
+    function say(el, text, cls) { el.innerHTML = ''; if (!text) return; var d = document.createElement('div'); d.className = 'msg' + (cls ? ' ' + cls : ''); d.textContent = text; el.appendChild(d); }
+
+  /* --- chọn file --- */
+  var drop = $('#drop'), fi = $('#file');
+  drop.addEventListener('click', function () { fi.click(); });
+  drop.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fi.click(); } });
+  ['dragenter', 'dragover'].forEach(function (n) { drop.addEventListener(n, function (e) { e.preventDefault(); drop.classList.add('on'); }); });
+  ['dragleave', 'drop'].forEach(function (n) { drop.addEventListener(n, function (e) { e.preventDefault(); drop.classList.remove('on'); }); });
+  drop.addEventListener('drop', function (e) { if (e.dataTransfer.files[0]) load(e.dataTransfer.files[0]); });
+  fi.addEventListener('change', function () { if (fi.files[0]) load(fi.files[0]); });
+
+  function load(f) {
+    say($('#fileMsg'), 'Đang đọc ' + f.name + '…');
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        if (!window.XLSX) throw new Error('Chưa tải được thư viện đọc Excel. Kiểm tra mạng rồi tải lại trang.');
+        var res = NhanIn.readExcel(XLSX, new Uint8Array(r.result));
+        if (!res.found) { all = []; say($('#fileMsg'), 'Không tìm thấy bảng có cột "NGÀY GỬI" và "TÊN VÀ ĐỊA CHỈ DOANH NGHIỆP" trong file này.', 'err'); return; }
+        all = res.rows;
+        var dl = NhanIn.dateList(all);
+        say($('#fileMsg'), 'Đã đọc ' + f.name + ': ' + all.length + ' dòng thông tin.');
+        var box = $('#dates'); box.innerHTML = '';
+        if (dl.length) {
+          box.hidden = false;
+          var lab = document.createElement('span'); lab.className = 'note'; lab.textContent = 'Ngày có trong file:'; box.appendChild(lab);
+          dl.forEach(function (d) { var b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = d; b.addEventListener('click', function () { $('#date').value = d; pick(); }); box.appendChild(b); });
+          if (dl.length === 1 && !$('#date').value) { $('#date').value = dl[0]; }
+        }
+        pick();
+      } catch (e) { say($('#fileMsg'), 'Không đọc được file: ' + (e.message || e), 'err'); }
+    };
+    r.readAsArrayBuffer(f);
+  }
+
+  /* --- lọc theo ngày --- */
+  $('#date').addEventListener('input', pick);
+  function pick() {
+    var t = $('#date').value.trim();
+    $('#resCard').hidden = true; say($('#dateMsg'), '');
+    if (!all.length || !t) return;
+    var rows = NhanIn.filterByDate(all, t);
+    if (rows === null) { say($('#dateMsg'), 'Ngày chưa đúng định dạng. Gõ dạng 16/10/2026.', 'warn'); return; }
+    if (!rows.length) { say($('#dateMsg'), 'Không có dòng nào của ngày ' + t + '.', 'warn'); return; }
+    recs = rows.map(function (r) { return { on: true, name: r.name, addr: r.addr, phone: r.phone, who: r.who }; });
+    say($('#dateMsg'), 'Có ' + rows.length + ' dòng của ngày ' + t + '.');
+    render(); $('#resCard').hidden = false;
+  }
+
+  function render() {
+    var box = $('#list'); box.innerHTML = '';
+    recs.forEach(function (r, i) {
+      var d = document.createElement('div'); d.className = 'rec' + (r.on ? '' : ' off');
+      d.innerHTML = '<div class="chk"><input type="checkbox" aria-label="Tạo file cho dòng ' + (i + 1) + '"' + (r.on ? ' checked' : '') + '></div>' +
+        '<div class="f"><div class="w"><label class="l">Tên đơn vị nhận (' + (i + 1) + ')</label><input type="text" data-k="name"></div>' +
+        '<div class="w"><label class="l">Địa chỉ</label><textarea data-k="addr"></textarea></div>' +
+        '<div><label class="l">Số điện thoại</label><input type="text" data-k="phone"></div>' +
+        '<div><label class="l">Người nhận</label><input type="text" data-k="who"></div></div>';
+      d.querySelectorAll('[data-k]').forEach(function (el) { el.value = r[el.getAttribute('data-k')] || ''; el.addEventListener('input', function () { r[el.getAttribute('data-k')] = el.value; }); });
+      d.querySelector('input[type=checkbox]').addEventListener('change', function (e) { r.on = e.target.checked; d.classList.toggle('off', !r.on); upd(); });
+      box.appendChild(d);
+    });
+    upd();
+  }
+  function nOn() { return recs.filter(function (r) { return r.on; }).length; }
+  function upd() { var n = nOn(); $('#count').textContent = n ? 'Sẽ tạo 1 file Word: ' + n + ' nhãn, ' + Math.ceil(n / 6) + ' trang' : 'Chưa chọn đơn vị nào'; $('#go').disabled = n === 0; }
+
+  /* --- tạo file --- */
+  $('#go').addEventListener('click', async function () {
+    var btn = $('#go'); btn.disabled = true; say($('#goMsg'), 'Đang tạo file Word…');
+    try {
+      var sel = recs.filter(function (r) { return r.on; });
+      var day = $('#date').value.trim().replace(/[\/.]/g, '-');
+      var data = await NhanIn.makeSheet(JSZip, TPL_TOMY, sel, measure);
+      var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })); a.download = 'Nhan_' + day + '.docx'; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+      say($('#goMsg'), 'Đã tạo file Word gồm ' + sel.length + ' nhãn.');
+    } catch (e) {
+      say($('#goMsg'), 'Không tạo được file: ' + ((e && e.message) || e), 'err');
+    }
+    btn.disabled = nOn() === 0;
+  });
+})();
+</script>
+
+</body>
+</html>
